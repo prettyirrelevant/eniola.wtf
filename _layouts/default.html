@@ -1,0 +1,37 @@
+---
+layout: default
+---
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="icon" href="/favicon.ico">
+  <meta name="description" content="{{ page.description }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <nav>
+      <center>
+        <a href="/">Home</a> ·
+        <a href="/about.html">About</a> ·
+        <a href="/blog.html">Blog</a>
+      </center>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    {{ content }}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <hr>
+    <center><small>
+      <a href="/feed.xml">RSS</a> · <a href="{{ site.twitter_link }}">X(formerly Twitter)</a> · <a href="{{ site.github_link }}">GitHub</a>
+    </small></center>
+
+  </footer>
+</body>
+</html>
