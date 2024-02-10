@@ -4,7 +4,7 @@ title: Isaac Adewumi
 description: Hey! I'm Isaac (aka prettyirrelevant), and this is my little space on the www where I talk about topics I'm passionate about.
 ---
 
-# Isaac's website
+# Isaac's playground
 
 Hey! I intend to use this to document my thoughts, share learnings and other things that should probably be tweets(or xes). Ultimately, this is an attempt at improving my writing skills.
 
