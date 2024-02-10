@@ -30,8 +30,9 @@ linkedin_link: https://www.linkedin.com/in/isaac-adewumi
 
 # Build settings
 plugins:
-  - jekyll-feed
   - jekyll-toc
+  - jekyll-feed
+  - jekyll-sitemap
 
 toc:
   min_level: 1
