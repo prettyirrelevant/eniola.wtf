@@ -1,6 +1,7 @@
- 
+@import url("https://fonts.googleapis.com/css2?family=Cherry+Swash:ital,wght@0,400;0,500&family=Space+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+
  body {
-  font-family: -apple-system, BlinkMacSystemFont;
+  font-family: 'Space Grotesk';
   font-weight: 300;
 	font-size: 15px;
   line-height: 25px;
@@ -9,6 +10,10 @@
   max-width: 1000px;
 	margin: 0px auto;
   /* padding: 0 1rem; */
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Cherry Swash';
 }
 
 a {

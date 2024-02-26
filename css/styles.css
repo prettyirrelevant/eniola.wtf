@@ -1,5 +1,7 @@
- body {
-  font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+@import url("https://fonts.googleapis.com/css2?family=Cherry+Swash:ital,wght@0,400;0,500&family=Space+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+
+body {
+  font-family: 'Space Grotesk';
   font-weight: 300;
 	font-size: 16px;
   line-height: 30px;
@@ -8,6 +10,10 @@
   max-width: 800px;
 	margin: 100px auto;
   padding: 0 1rem;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Cherry Swash';
 }
 
 a {
@@ -40,6 +46,7 @@ sup {
   font-size: 10px;
 }
 
+
 blockquote {
   border-left: 2px solid #cccccc; /* Add a left border */
   padding: 0 15px; /* Add some padding for space */
@@ -48,12 +55,10 @@ blockquote {
 }
 
 .post-date {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Space Grotesk';
   color: #575757;
   font-size: 18px;
 }
-
-
 
 summary {
   cursor:pointer;

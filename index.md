@@ -10,4 +10,4 @@ Hey! I intend to use this to document my thoughts, share learnings and other thi
 
 I went for this [style](https://github.com/alexmolas/alexmolas.github.io/) after experimenting with various themes from a couple of static site builders(Hugo, Jekyll, Astro, etc. to name a few) but nothing clicked till I stumbled on this [HN post](https://news.ycombinator.com/item?id=39293050) and that was it.
 
-If you want to hire me, take a look at my [CV](https://eniola.wtf/cv).
+If you want to hire me, take a look at my [CV](/cv).
