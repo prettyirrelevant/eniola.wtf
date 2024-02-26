@@ -35,13 +35,13 @@ jobs:
         run:
           sudo apt-get install --fix-missing libvips tree
 
-      - name: Display build directory
-        run: tree -a -L 1000 ./_site
-
       - name: Build with Jekyll
         run: bundle exec jekyll build
         env:
           JEKYLL_ENV: production
+
+      - name: Display build directory
+        run: tree -a -L 1000 ./_site
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2.0
