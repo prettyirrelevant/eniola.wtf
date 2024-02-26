@@ -35,3 +35,6 @@ gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 
 gem 'jekyll-toc'
 gem 'jekyll-sitemap'
+gem 'jekyll-seo-tag'
+gem 'jekyll-og-image'
+gem 'ruby-vips', '~> 2.2', '>= 2.2.1'
