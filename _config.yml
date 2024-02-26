@@ -45,7 +45,7 @@ collections:
     output: true
 
 og_image:
-  output_dir: "assets/og-images"
+  output_dir: "assets/images/og"
   image: "assets/images/isaac.jpeg"
   domain: "eniola.wtf"
   canvas:

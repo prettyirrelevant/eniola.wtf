@@ -33,7 +33,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run:
-          sudo apt-get install --fix-missing libvips
+          sudo apt-get install --fix-missing libvips tree
+
+      - name: Display build directory
+        run: tree -a -L 1000 ./_site
 
       - name: Build with Jekyll
         run: bundle exec jekyll build
@@ -46,7 +49,7 @@ jobs:
             publish-dir: './_site'
             production-branch: main
             production-deploy: true
-            enable-commit-comment: false
+            enable-commit-comment: true
             enable-pull-request-comment: false
             overwrites-pull-request-comment: true
             github-token: ${{ secrets.GITHUB_TOKEN }}
