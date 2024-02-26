@@ -21,7 +21,7 @@
 title: Isaac Adewumi's Blog
 email: ienioladewumi@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Welcome to my ranch! Here you'll find a glimpse into my life as a student, interesting soul, and my journey as software engineer (in that order).
+   Welcome here! I intend to use this to document my thoughts, share learnings and other things that should probably be tweets(or xes).
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://eniola.wtf" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_link: https://www.twitter.com/eniolawtf
