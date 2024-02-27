@@ -40,9 +40,7 @@ exclude:
     - notebooks
     - venv
 
-collections:
-  recipes:
-    output: true
+permalink: /:categories/:year/:month/:day/:title
 
 og_image:
   output_dir: "assets/images/og"
