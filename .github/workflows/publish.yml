@@ -1,4 +1,4 @@
-name: Deploy Jekyll site to Netlify
+name: Deploy Jekyll site to Cloudflare Pages
 
 on:
   push:
@@ -10,10 +10,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: "netlify"
-  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -50,4 +46,3 @@ jobs:
           accountId: f72f147b3d9e5a6b1a613712493f4502
           projectName: eniola
           directory: _site
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
