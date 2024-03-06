@@ -43,17 +43,11 @@ jobs:
       - name: Display build directory
         run: tree -a -L 1000 ./_site
 
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v2.0
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
-            publish-dir: './_site'
-            production-branch: main
-            production-deploy: true
-            enable-commit-comment: true
-            enable-pull-request-comment: false
-            overwrites-pull-request-comment: true
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-            deploy-message: "deployed from github actions"
-        env:
-            NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-            NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: f72f147b3d9e5a6b1a613712493f4502
+          projectName: eniola
+          directory: _site
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
