@@ -1,0 +1,33 @@
+{
+  "name": "eniola.wtf",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "lint:fix": "pnpm lint --write",
+    "format": "biome format . --write",
+    "dev": "next dev --turbopack -p 8080"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.15",
+    "babel-plugin-react-compiler": "^19.0.0-beta-a7bf2bd-20241110",
+    "lucide-react": "^0.456.0",
+    "next": "15.0.3",
+    "next-mdx-remote": "^5.0.0",
+    "react": "19.0",
+    "react-dom": "19.0",
+    "shiki": "^1.22.2",
+    "use-scramble": "^2.2.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.8.1",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,41 @@
+---
+title: "Worker processes on Railway."
+description: How to run worker processes on Railway.
+date: August 21, 2023
+---
+
+[Railway](https://railway.app) has been my defacto choice for hosting web applications since the [removal of free tier on Heroku](https://blog.heroku.com/next-chapter). The developer experience is **quite** similar to that of Heroku as it supports the use of `Procfile`, unlike other services that force you to use Dockerfiles or learn a new configuration. Why **quite**? Well, stick around.
+
+For most projects, I only need to spin up a server, so the `web: [insert command to start server]` inside a `Procfile` is enough. The one time I needed to run a worker process to handle background tasks(or jobs), it didn't work.
+
+Thinking it was an error from my end, I spent minutes trying to figure out what I did wrong in my setup -- adding a command to a Procfile should not pose such a difficulty. Then I decided to check their documentation, to see if there's a platform flavoured Procfile or something of some sort. Lo and behold...
+> [*Only a single process type is supported at the moment*](https://docs.railway.app/guides/build-configuration#procfiles).
+
+## Solution
+
+For context, this is a Django application that uses Huey for background tasks. My server of choice is Gunicorn -- uWSGI, Daphne, Waitress, Sanic and Uvicorn are possible alternatives.
+
+So, how do I run both the server and Huey consumer simultaneously? Using a bash script since I can easily run gunicorn in [**daemon mode**](https://docs.gunicorn.org/en/stable/settings.html#daemon). Here's how it looks.
+
+```sh
+#!/usr/bin/env sh
+
+echo "Starting Gunicorn server..."
+gunicorn path.to.wsgi --capture-output --log-level info --workers 4 --daemon
+
+echo "Starting Huey consumer..."
+python manage.py run_huey
+```
+The most important flag here is `--daemon`, which allows Gunicorn to run in detached mode.
+
+Let's call the script above `entrypoint.sh`. I can now use it in my Procfile like this.
+
+```
+web: sh entrypoint.sh
+```
+
+## Conclusion
+
+Yes, it works but it'll be wonderful to see this supported by Railway instead of this approach.
+
+Also, this will increase the memory usage of your application -- caused by memory leaks from the Huey consumer. This is mostly a speculation because running only the Django application results in significantly lower memory usage.

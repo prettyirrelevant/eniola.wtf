@@ -1,0 +1,51 @@
+---
+title: Parameterizing Django Settings with Pytest Fixtures
+description: A guide to using pytest fixtures to test different configurations for Django settings.
+date: July 10, 2023
+---
+
+I am currently working on a [Django Rest Framework](https://www.django-rest-framework.org/) project and need a way to test different behaviors for a particular setting. After checking the [pytest-django docs](https://pytest-django.readthedocs.io/en/latest/configuring_django.html), I saw that the library provides a `settings` fixture - a great starting point.
+
+Now, how do I parameterize this `settings` fixture? My first attempt, albeit wrong, was:
+
+```python
+import pytest
+
+@pytest.mark.parametrize("settings", [
+    {"DEBUG": True},
+    {"DEBUG": False}
+])
+def test_settings_debug(settings):
+    print(settings)
+    assert settings.DEBUG in (True, False)
+```
+
+This changes the `settings` fixture from type `pytest_django.fixtures.SettingsWrapper` into a `dict`, which isn't the result I expected. But it's a step in the right direction.
+
+To achieve my intended result, I introduced two additional fixtures:
+
+```python
+@pytest.fixture()
+def custom_settings():
+    return {}
+
+@pytest.fixture(autouse=True)
+def override_django_settings(custom_settings, settings):
+    for k, v in custom_settings.items():
+        setattr(settings, k, v)
+
+@pytest.mark.parametrize("custom_settings", [
+    {"DEBUG": True},
+    {"DEBUG": False}
+])
+def test_settings_debug(settings):
+    print(settings)
+    assert settings.DEBUG in (True, False)
+```
+
+What do these fixtures do?
+
+- **`custom_settings`**: This fixture allows definition of settings to be parametrized as a dictionary without directly mutating the `settings` fixture.
+- **`override_django_settings`**: This fixture runs for every test -- automatically. If `custom_settings` is provided, it mutates the `settings` fixture by updating value of each setting.
+
+To learn more about pytest, check out their [docs](https://docs.pytest.org/en/8.0.x/).
