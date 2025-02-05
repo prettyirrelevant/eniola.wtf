@@ -1,0 +1,372 @@
+---
+title: Building an IoT Attendance System with ESP32 and BLE
+description: A detailed look at implementing a Bluetooth Low Energy attendance system using ESP32, focusing on the IoT aspect of my undergraduate final year project.
+date: February 5, 2025
+---
+
+For my undergraduate final year project, I built a student attendance system using BLE (Bluetooth Low Energy). While the project involved a mobile app and an authentication server, this post focuses on the IoT implementation using an ESP32 board - the part that actually handles the Bluetooth communication.
+
+## Why PlatformIO?
+
+First, let me explain why I chose PlatformIO over the Arduino IDE. As someone who spent most of my coding time in VSCode & PyCharm, Arduino IDE's interface just didn't feel right. PlatformIO gave me:
+- A familiar VSCode environment
+- Proper intellisense support
+- Easy library installation through platformio.ini
+
+Here's how simple my platformio.ini looks:
+
+```ini
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+monitor_speed = 115200
+framework = arduino
+lib_deps =
+    bblanchon/ArduinoJson@^7.1.0
+    h2zero/NimBLE-Arduino @ ^1.4.0
+```
+
+## Core Implementation
+
+Let's dive into how each part of the system works. The ESP32 runs as a BLE server that phones connect to for marking attendance. I used NimBLE instead of the default BLE library for its memory efficiency and developer experience.
+
+### BLE Service Setup
+
+Unlike classic Bluetooth, BLE works with "services" and "characteristics" - think of them as endpoints in a REST API.
+
+The core structure uses a single service with four characteristics - each handling different operations. Here's the full server setup:
+
+```cpp
+#define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHAR_UUID_CREATE_ATTENDANCE "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHAR_UUID_MARK_ATTENDANCE "beb5483e-36e1-4688-b7f5-ea07361b26a9"
+#define CHAR_UUID_RETRIEVE_ATTENDANCES "beb5483e-36e1-4688-b7f5-ea07361b26aa"
+#define CHAR_UUID_RETRIEVE_SESSIONS "beb5483f-36e1-4688-b7f5-ea07361b26ab"
+
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Starting BLE Attendance System!");
+
+    NimBLEDevice::init("ESP32-Attendance");
+    pServer = NimBLEDevice::createServer();
+    pServer->setCallbacks(new ServerCallbacks());
+
+    NimBLEService *pService = pServer->createService(SERVICE_UUID);
+
+    // Setting up all characteristics with their properties
+    pCreateAttendanceCharacteristic = pService->createCharacteristic(
+        CHAR_UUID_CREATE_ATTENDANCE,
+        NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::WRITE
+    );
+    pCreateAttendanceCharacteristic->setCallbacks(new CreateAttendanceCallback());
+
+    pMarkAttendanceCharacteristic = pService->createCharacteristic(
+        CHAR_UUID_MARK_ATTENDANCE,
+        NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::WRITE
+    );
+    pMarkAttendanceCharacteristic->setCallbacks(new MarkAttendanceCallback());
+
+    pRetrieveAttendancesCharacteristic = pService->createCharacteristic(
+        CHAR_UUID_RETRIEVE_ATTENDANCES,
+        NIMBLE_PROPERTY::READ
+    );
+    pRetrieveAttendancesCharacteristic->setCallbacks(new RetrieveAttendancesCallback());
+
+    pRetrieveSessionsCharacteristic = pService->createCharacteristic(
+        CHAR_UUID_RETRIEVE_SESSIONS,
+        NIMBLE_PROPERTY::READ
+    );
+    pRetrieveSessionsCharacteristic->setCallbacks(new RetrieveSessionsCallback());
+
+    pService->start();
+
+    NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->setScanResponse(true);
+    pAdvertising->start();
+}
+```
+
+This setup creates a BLE server with a single service that has four characteristics:
+- CREATE_ATTENDANCE: For creating new attendance sessions
+- MARK_ATTENDANCE: For students to mark their attendance
+- RETRIEVE_ATTENDANCES: To get all marked attendances
+- RETRIEVE_SESSIONS: To get active session information
+
+Each characteristic has specific properties - WRITE for ones that receive data and READ for ones that send data.
+
+### Data Management
+
+The system uses two main data structures to manage sessions and attendance records:
+
+```cpp
+struct AttendanceSession {
+    String courseCode;
+    String courseName;
+    unsigned long expiryTimestamp;
+};
+
+struct AttendanceRecord {
+    String name;
+    String matricNumber;
+    unsigned long timestamp;
+};
+
+// Main storage containers
+std::map<String, AttendanceSession> sessions;
+std::map<String, std::vector<AttendanceRecord>> markedAttendances;
+```
+
+### Creating Attendance Sessions
+
+When a lecturer wants to start taking attendance, they trigger the `CreateAttendanceCallback`:
+
+```cpp
+class CreateAttendanceCallback : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic *pCharacteristic) {
+        Serial.println("CreateAttendanceCallback: onWrite called");
+        std::string value = pCharacteristic->getValue();
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, value);
+
+        if (error) {
+            Serial.print("Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+
+        String sessionId = doc["sessionId"].as<String>();
+        String courseCode = doc["courseCode"].as<String>();
+        String courseName = doc["courseName"].as<String>();
+        unsigned long expiryTimestamp = doc["expiryTimestamp"].as<unsigned long>();
+
+        if (sessions.size() >= MAX_SESSIONS) {
+            Serial.println("Maximum number of sessions reached");
+            return;
+        }
+
+        AttendanceSession newSession = {courseCode, courseName, expiryTimestamp};
+        sessions[sessionId] = newSession;
+
+        Serial.println("New attendance session created successfully");
+        Serial.print("Total active sessions: ");
+        Serial.println(sessions.size());
+    }
+};
+```
+
+### Recording Attendance
+
+The `MarkAttendanceCallback` handles attendance marking requests:
+
+```cpp
+class MarkAttendanceCallback : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic *pCharacteristic) {
+        Serial.println("MarkAttendanceCallback: onWrite called");
+        std::string value = pCharacteristic->getValue();
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, value);
+
+        if (error) {
+            Serial.print("Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+
+        String sessionId = doc["sessionId"].as<String>();
+        String studentName = doc["name"].as<String>();
+        String matricNumber = doc["matricNumber"].as<String>();
+        unsigned long timestamp = doc["timestamp"].as<unsigned long>();
+
+        if (sessions.find(sessionId) != sessions.end()) {
+            AttendanceSession &session = sessions[sessionId];
+
+            if (timestamp <= session.expiryTimestamp) {
+                AttendanceRecord record = {studentName, matricNumber, timestamp};
+                markedAttendances[sessionId].push_back(record);
+                Serial.println("Attendance marked successfully");
+                Serial.print("Total attendances for this session: ");
+                Serial.println(markedAttendances[sessionId].size());
+            } else {
+                Serial.println("Attendance session has expired");
+            }
+        } else {
+            Serial.println("No active attendance session found for this ID");
+        }
+    }
+};
+```
+
+We also keep our sessions clean with periodic cleanup:
+
+```cpp
+void removeExpiredSessions() {
+    Serial.println("Checking for expired sessions...");
+    unsigned long currentTime = millis();
+
+    for (auto it = sessions.begin(); it != sessions.end();) {
+        if (it->second.expiryTimestamp <= currentTime) {
+            Serial.print("Removing expired session: ");
+            Serial.println(it->first);
+            markedAttendances.erase(it->first);
+            it = sessions.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    Serial.print("Remaining active sessions: ");
+    Serial.println(sessions.size());
+}
+```
+
+### Retrieving Data
+
+The system provides two ways to get data:
+
+```cpp
+class RetrieveAttendancesCallback : public NimBLECharacteristicCallbacks {
+    void onRead(NimBLECharacteristic *pCharacteristic) {
+        Serial.println("RetrieveAttendancesCallback: onRead called");
+
+        JsonDocument doc;
+        JsonObject sessionsObj = doc.to<JsonObject>();
+
+        for (const auto &pair : sessions) {
+            JsonObject sessionObj = sessionsObj[pair.first].to<JsonObject>();
+            sessionObj["sessionId"] = pair.first;
+            sessionObj["courseCode"] = pair.second.courseCode;
+            sessionObj["courseName"] = pair.second.courseName;
+            sessionObj["expiryTimestamp"] = pair.second.expiryTimestamp;
+
+            JsonArray attendancesArray = sessionObj["attendances"].to<JsonArray>();
+            const auto &sessionAttendances = markedAttendances[pair.first];
+            for (const auto &record : sessionAttendances) {
+                JsonObject recordObj = attendancesArray.add<JsonObject>();
+                recordObj["name"] = record.name;
+                recordObj["matricNumber"] = record.matricNumber;
+                recordObj["timestamp"] = record.timestamp;
+            }
+        }
+
+        String attendancesJson;
+        serializeJson(doc, attendancesJson);
+        pCharacteristic->setValue(attendancesJson);
+    }
+};
+
+class RetrieveSessionsCallback : public NimBLECharacteristicCallbacks {
+    void onRead(NimBLECharacteristic *pCharacteristic) {
+        Serial.println("RetrieveSessionsCallback: onRead called");
+
+        JsonDocument doc;
+        JsonArray sessionsArray = doc.to<JsonArray>();
+
+        for (const auto &pair : sessions) {
+            JsonObject sessionObj = sessionsArray.add<JsonObject>();
+            sessionObj["sessionId"] = pair.first;
+            sessionObj["courseCode"] = pair.second.courseCode;
+            sessionObj["courseName"] = pair.second.courseName;
+            sessionObj["expiryTimestamp"] = pair.second.expiryTimestamp;
+        }
+
+        String sessionsJson;
+        serializeJson(doc, sessionsJson);
+        pCharacteristic->setValue(sessionsJson);
+    }
+};
+```
+
+## Technical Challenges and Solutions
+
+### 1. MTU Size Differences
+
+One major issue came up during testing on Android. While the app worked fine on my iOS device, on Android the data was getting cut off. The problem? Different BLE packet size limits - iOS can handle 500+ bytes but Android cuts off at 23 bytes by default. Here's how I fixed it:
+
+```typescript
+import { BleManager } from 'react-native-ble-plx';
+
+const bleManager = new BleManager();
+const DEVICE_NAME = "xxxxxxxx";
+
+bleManager.startDeviceScan(null, null, (error, scannedDevice) => {
+  if (error) {
+    console.error("Scan error:", error);
+    return;
+  }
+
+  if (scannedDevice && scannedDevice.name === DEVICE_NAME) {
+    bleManager.stopDeviceScan();
+    scannedDevice
+      .connect({ requestMTU: 512 })
+      .then((connectedDevice) =>
+        connectedDevice.discoverAllServicesAndCharacteristics()
+      )
+      .then((discoveredDevice) => {
+        console.log("Connected and discovered services");
+      })
+      .catch((connectError) => {
+        console.error("Connection error:", connectError);
+      });
+  }
+});
+}
+```
+
+### 2. Mobile BLE Libraries Challenge
+
+The BLE library ecosystem for mobile development is relatively niche. After testing several options:
+
+- react-native-ble-plx
+- react-native-ble-manager
+- capacitor-bluetooth-le
+
+I chose react-native-ble-plx for its feature set, active maintenance, ease of use and documentation.
+
+### 3. Debugging Complexity
+
+BLE debugging is challenging because you can't always see what's happening. I implemented extensive logging:
+
+```cpp
+void logJson(const JsonDocument& doc, const char* label) {
+    String output;
+    serializeJson(doc, output);
+    Serial.print(label);
+    Serial.println(output);
+}
+```
+
+## Future Improvement
+
+I used JSON because it was easy to work with, but it's not the best choice for BLE data transfer. Here's a more efficient approach (perhaps?):
+
+```cpp
+// Current approach using JSON (around 100 bytes)
+{
+    "name": "John Doe",
+    "matricNumber": "A123456",
+    "timestamp": 1707148800000
+}
+
+// More efficient binary format (44 bytes)
+struct __attribute__((packed)) AttendancePacket {
+    char name[32];         // Student name
+    char matricNumber[8];  // Matric number
+    uint32_t timestamp;    // When attendance was marked
+};
+```
+
+Using a binary format would reduce packet size by more than 50%, letting us add more information without increasing transmission overhead.
+
+## Conclusion
+
+While this implementation serves well as a final year project prototype, it's helped me understand the complexities of BLE development, especially in cross-platform scenarios.
+
+If you're planning a similar project, I'd recommend:
+1. Start with PlatformIO - it's worth the initial setup time.
+2. Plan for cross-platform MTU differences.
+3. Implement thorough logging from day one.
+4. Test with multiple device types early.
+
+The code is available on [GitHub](https://github.com/prettyirrelevant/final-year-project) if you want to take a look or build on it.
