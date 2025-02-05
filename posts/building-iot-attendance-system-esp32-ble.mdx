@@ -278,7 +278,7 @@ class RetrieveSessionsCallback : public NimBLECharacteristicCallbacks {
 };
 ```
 
-## Technical Challenges and Solutions
+## Technical Challenges
 
 ### 1. MTU Size Differences
 
@@ -326,16 +326,7 @@ I chose react-native-ble-plx for its feature set, active maintenance, ease of us
 
 ### 3. Debugging Complexity
 
-BLE debugging is challenging because you can't always see what's happening. I implemented extensive logging:
-
-```cpp
-void logJson(const JsonDocument& doc, const char* label) {
-    String output;
-    serializeJson(doc, output);
-    Serial.print(label);
-    Serial.println(output);
-}
-```
+BLE debugging is challenging because you can't always see what's happening. I implemented extensive logging and debugger -- spamming `Serial.println(output)` everywhere.
 
 ## Future Improvement
 
