@@ -21,8 +21,7 @@ export function Header() {
       </div>
       <p className="leading-relaxed animate-fade-in-up">
         i'm a software engineer with an electronic & electrical engineering
-        background who fell in love with code after watching people build
-        websites for local churches. these days, i write software, obsess over
+        background. these days, i write software, obsess over
         codebase architecture, and when i'm not pushing commits, you'll find me
         either watching manchester united matches, gaming (just finished
         uncharted!), or vibing to afrobeats.
