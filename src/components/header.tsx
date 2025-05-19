@@ -23,8 +23,7 @@ export function Header() {
         i'm a software engineer with an electronic & electrical engineering
         background. these days, i write software, obsess over
         codebase architecture, and when i'm not pushing commits, you'll find me
-        either watching manchester united matches, gaming (just finished
-        uncharted!), or vibing to afrobeats.
+        either watching manchester united matches, gaming, or listening to music.
       </p>
     </header>
   );
