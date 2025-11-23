@@ -1,0 +1,44 @@
+---
+title: "Worker processes on Railway."
+description: How to run worker processes on Railway.
+date: August 21, 2023
+---
+
+[Railway](https://railway.app) has been my default choice for hosting web applications since [Heroku removed its free tier](https://blog.heroku.com/next-chapter). The developer experience is similar to Heroku's because it supports `Procfile`, unlike other services that force you into Dockerfiles or proprietary configurations.
+
+For most projects, I only need a web server, so `web: [insert command to start server]` in a `Procfile` is enough. But the one time I needed to run a worker process for background tasks, it didn't work.
+
+I spent some time trying to figure out what I did wrong. Adding a command to a Procfile shouldn't be difficult. Then I checked their documentation to see if there was some platform-specific format I was missing.
+
+> [*Only a single process type is supported at the moment*](https://docs.railway.app/guides/build-configuration#procfiles).
+
+There it was.
+
+## The workaround
+
+For context, this is a Django application using Huey for background tasks. My server is Gunicorn (though uWSGI, Daphne, Waitress, Sanic, and Uvicorn would work too).
+
+How do I run both the server and Huey consumer simultaneously? A bash script, taking advantage of Gunicorn's [**daemon mode**](https://docs.gunicorn.org/en/stable/settings.html#daemon). Here's what it looks like:
+
+```sh
+#!/usr/bin/env sh
+echo "Starting Gunicorn server..."
+gunicorn path.to.wsgi --capture-output --log-level info --workers 4 --daemon
+
+echo "Starting Huey consumer..."
+python manage.py run_huey
+```
+
+The key here is the `--daemon` flag, which lets Gunicorn run in detached mode. This frees up the process to run the Huey consumer in the foreground.
+
+Call this script `entrypoint.sh`. You can now use it in your Procfile:
+
+```
+web: sh entrypoint.sh
+```
+
+## Tradeoffs
+
+This works, but it's not ideal. Railway should support multiple process types natively instead of requiring this workaround.
+
+Also, this approach increases memory usage. Running both processes in the same container means they share resources, and I've noticed higher memory consumption compared to running just the Django application. I suspect this is partly due to memory leaks from the Huey consumer, though I haven't confirmed it definitively.

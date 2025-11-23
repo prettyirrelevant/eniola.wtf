@@ -1,0 +1,60 @@
+---
+title: Parameterizing Django Settings with Pytest Fixtures
+description: A guide to using pytest fixtures to test different configurations for Django settings.
+date: July 10, 2023
+---
+
+I'm currently working on a [Django Rest Framework](https://www.django-rest-framework.org/) project and needed a way to test how my code behaves under different settings configurations. The [pytest-django docs](https://pytest-django.readthedocs.io/en/latest/configuring_django.html) mention a `settings` fixture, which seemed like the right tool for the job.
+
+The question was: how do I parameterize this `settings` fixture?
+
+## My first attempt
+
+My initial approach was straightforward but wrong:
+
+```python
+import pytest
+
+@pytest.mark.parametrize("settings", [
+    {"DEBUG": True},
+    {"DEBUG": False}
+])
+def test_settings_debug(settings):
+    print(settings)
+    assert settings.DEBUG in (True, False)
+```
+
+This didn't work as expected. It replaced the `settings` fixture (which is of type `pytest_django.fixtures.SettingsWrapper`) with a plain `dict`. Not what I wanted.
+
+## The solution
+
+I needed a way to parameterize settings without losing the fixture's functionality. Here's what worked:
+
+```python
+@pytest.fixture()
+def custom_settings():
+    return {}
+
+@pytest.fixture(autouse=True)
+def override_django_settings(custom_settings, settings):
+    for k, v in custom_settings.items():
+        setattr(settings, k, v)
+
+@pytest.mark.parametrize("custom_settings", [
+    {"DEBUG": True},
+    {"DEBUG": False}
+])
+def test_settings_debug(settings):
+    print(settings)
+    assert settings.DEBUG in (True, False)
+```
+
+## How it works
+
+The solution uses two fixtures:
+
+**`custom_settings`**: This fixture returns an empty dictionary by default. When parameterized, it provides the settings you want to override without directly touching the `settings` fixture.
+
+**`override_django_settings`**: This fixture runs automatically for every test (thanks to `autouse=True`). It takes whatever `custom_settings` provides and applies those values to the actual `settings` fixture using `setattr`.
+
+For more on pytest fixtures and parameterization, check out the [pytest documentation](https://docs.pytest.org/en/8.0.x/).
